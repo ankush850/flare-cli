@@ -1,4 +1,14 @@
-# Flare-CLI
+<div align="center">
+
+## Flare-CLI
+<br>
+
+<img src="https://github.com/ankush850/Flare-CLI/blob/dbbc08a0bd696111f21e8680d1695ff12eff55c1/Flare-CLI.png" width="300"/>
+
+*Debug Faster. Fix Smarter*
+
+</div>
+
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/release/python-3120/)
 [![AWS](https://img.shields.io/badge/AWS-Serverless-orange)](https://aws.amazon.com/)
