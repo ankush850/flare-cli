@@ -18,46 +18,7 @@ Built on three Amazon Nova foundation models: Nova Embeddings for semantic anoma
 
 ## System Architecture
 
-```mermaid
-flowchart LR
-    subgraph triggers [Trigger Sources]
-        A1["CloudWatch Alarm"]
-        A2["EventBridge Schedule"]
-        A3["Log Subscription Filter"]
-    end
-
-    subgraph analysis [Analysis Pipeline]
-        L["Flare Lambda"]
-        C["Cordon"]
-        NE["Nova Embeddings"]
-        NL["Nova 2 Lite"]
-    end
-
-    subgraph notification [Notification]
-        SNS["SNS"]
-        Email["Email / Slack"]
-    end
-
-    subgraph voice [Voice Pipeline]
-        DDB["DynamoDB"]
-        PF["Pre-Fetch"]
-        CON["Amazon Connect"]
-        CF["Contact Flow"]
-        Lex["Lex + Nova 2 Sonic S2S"]
-        FF["Fulfillment Lambda"]
-    end
-
-    A1 --> L
-    A2 --> L
-    A3 --> L
-    L --> C --> NE
-    NE --> C
-    C --> NL
-    NL --> SNS --> Email
-    NL --> DDB
-    NL --> PF
-    NL --> CON --> CF --> Lex --> FF --> DDB
-```
+![Alt text](https://i.ibb.co/1t39YT0R/Chat-GPT-Image-May-3-2026-11-24-22-AM.png)
 
 ### Amazon Nova Model Usage
 - **Nova Multimodal Embeddings** (`amazon.nova-2-multimodal-embeddings-v1:0`): Semantic log anomaly detection via Cordon.
@@ -90,32 +51,8 @@ src/flare/
     reasoning.txt     System prompt for retrieve-then-reason step
 ```
 
-```mermaid
-flowchart TD
-    H["handler.py"] --> E["events.py"]
-    H --> L["logs.py"]
-    H --> B["budget.py"]
-    H --> A["analyzer.py"]
-    H --> T["triage.py"]
-    H --> N["notifier.py"]
-    H --> S["store.py"]
-    H --> CA["caller.py"]
-    H --> PF["prefetch.py"]
-    H --> C["config.py"]
+![Alt text](https://i.ibb.co/YFdM8yg0/3.png)
 
-    PF --> T2["tools.py"]
-    PF --> S
-    PF --> TG["triage.py (litellm)"]
-
-    VH["voice_handler.py"] --> S
-    VH --> T2
-    VH --> C
-    VH --> L
-
-    A --> C
-    T --> C
-    N --> C
-```
 *The `handler.py` is the entry point. It calls modules left-to-right through the pipeline. The `voice_handler.py` is a separate Lambda entry point, called by Amazon Connect and Lex.*
 
 ---
@@ -145,96 +82,15 @@ Delivers the RCA by phone and supports interactive investigation.
 
 ### Timing Sequence
 
-```mermaid
-sequenceDiagram
-    participant CW as CloudWatch
-    participant EV as EventBridge
-    participant FL as Flare Lambda
-    participant BD as Bedrock
-    participant SNS as SNS
-    participant DDB as DynamoDB
-    participant CON as Connect
-    participant Phone as Engineer Phone
-    participant Lex as Lex + Nova Sonic
-    participant VH as Voice Handler Lambda
-
-    CW->>EV: Alarm fires
-    EV->>FL: Invoke Lambda
-    FL->>CW: Fetch logs
-    FL->>BD: Cordon + Nova Embeddings (if needed)
-    FL->>BD: Nova 2 Lite generates RCA
-    FL->>SNS: Publish RCA (email/Slack)
-    FL->>DDB: Store incident record
-    par Pre-fetch
-        FL->>BD: Nova 2 Lite pre-fetch plan
-        BD-->>FL: JSON query plan
-        FL->>CW: Execute 5-8 queries (parallel)
-        CW-->>FL: Metric/log data
-        FL->>DDB: Cache query results
-    and Outbound call
-        FL->>CON: StartOutboundVoiceContact
-        CON->>Phone: Phone rings
-    end
-    Phone-->>CON: Engineer answers
-    CON->>VH: Invoke briefing handler
-    VH->>DDB: Read RCA
-    VH-->>CON: Return RCA text
-    CON->>Lex: Hand off to Nova Sonic
-    Lex->>Phone: Nova Sonic delivers briefing
-    loop Investigation
-        Phone->>Lex: Engineer asks question
-        Lex->>VH: Fulfillment request
-        VH->>DDB: Check cache
-        alt Cache hit
-            DDB-->>VH: Cached data (~100ms)
-        else Cache miss
-            VH->>CW: Live query (~2s)
-            CW-->>VH: Data
-        end
-        VH->>BD: Nova 2 Lite reasons
-        BD-->>VH: Conversational answer
-        VH-->>Lex: Response text
-        Lex->>Phone: Nova Sonic speaks answer
-    end
-```
+![Alt text](https://i.ibb.co/2YFgfv72/2.png)
 
 ---
 
 ## System Design (AWS Infrastructure)
 
-```mermaid
-flowchart TD
-    subgraph base [Base Stack - template.yaml]
-        FN["Flare Lambda\n(container image)"]
-        SNS["SNS Topic"]
-        ER1["EventBridge Rule\n(alarm trigger)"]
-        ER2["EventBridge Rule\n(schedule trigger)"]
-        SF["Subscription Filter"]
-        R1["IAM Role\n(Flare Function)"]
-    end
+![Alt text](https://i.ibb.co/VXsggT6/4.png)
 
-    subgraph voiceStack [Voice Stack - voice-template.yaml]
-        VFN["Voice Handler Lambda\n(container image)"]
-        DDB["DynamoDB Table\n(flare-incidents)"]
-        CI["Connect Instance"]
-        PN["Phone Number (DID)"]
-        CF["Contact Flow"]
-        LB["Lex V2 Bot\n+ Nova 2 Sonic S2S"]
-        R2["IAM Role\n(Voice Handler)"]
-    end
 
-    ER1 --> FN
-    ER2 --> FN
-    SF --> FN
-    FN --> SNS
-    FN --> DDB
-    FN -.->|StartOutboundVoiceContact| CI
-    CI --> PN
-    CI --> CF
-    CF --> LB
-    LB --> VFN
-    VFN --> DDB
-```
 
 ---
 
