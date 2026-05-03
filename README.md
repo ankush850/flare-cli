@@ -30,25 +30,35 @@ Built on three Amazon Nova foundation models: Nova Embeddings for semantic anoma
 ## Project Structure & Module Map
 
 ```text
-src/flare/
-  handler.py          Orchestrates the full pipeline (entry point)
-  config.py           Configuration from environment variables
-  events.py           Parses alarm / schedule / subscription triggers
-  logs.py             Fetches and resolves CloudWatch Log groups
-  budget.py           Token budget planner (fair-share allocation)
-  analyzer.py         Cordon integration for log reduction
-  triage.py           Nova 2 Lite RCA generation
-  notifier.py         SNS notification publishing
-  store.py            DynamoDB incident storage (put/get/update cache)
-  caller.py           Amazon Connect outbound call trigger
-  prefetch.py         Predictive pre-fetch (plan + execute + cache)
-  tools.py            CloudWatch query tools (metrics, logs, status)
-  voice_handler.py    Voice Lambda handlers (briefing + fulfillment)
-  prompts/
-    triage.txt        System prompt for RCA generation
-    prefetch.txt      Prompt for pre-fetch query planning
-    voice_system.txt  Persona description for the Lex/Nova Sonic bot
-    reasoning.txt     System prompt for retrieve-then-reason step
+flare-CLI/
+├── demo/                    # End-to-end sandbox infrastructure (VPC, RDS, ECS Fargate)
+├── docs/                    # Detailed documentation and architectural diagrams
+├── src/                     # Core application source code
+│   └── flare/
+│       ├── prompts/         # System prompts for Nova foundation models
+│       │   ├── prefetch.txt     # Predictive query planning prompt
+│       │   ├── reasoning.txt    # Retrieve-then-reason system prompt
+│       │   ├── triage.txt       # RCA generation prompt
+│       │   └── voice_system.txt # Lex/Nova Sonic persona definition
+│       ├── analyzer.py      # Cordon integration for log reduction
+│       ├── budget.py        # Token budget planner (fair-share allocation)
+│       ├── caller.py        # Amazon Connect outbound call trigger
+│       ├── config.py        # Configuration from environment variables
+│       ├── events.py        # Parses alarm/schedule/subscription triggers
+│       ├── handler.py       # Orchestrates the full pipeline (Base Stack entry point)
+│       ├── logs.py          # Fetches and resolves CloudWatch Log groups
+│       ├── notifier.py      # SNS notification publishing
+│       ├── prefetch.py      # Predictive pre-fetch (plan + execute + cache)
+│       ├── store.py         # DynamoDB incident storage (put/get/update cache)
+│       ├── tools.py         # CloudWatch query tools (metrics, logs, status)
+│       ├── triage.py        # Nova 2 Lite RCA generation
+│       └── voice_handler.py # Voice Lambda handlers (Voice Stack entry point)
+├── tests/                   # Unit tests mocking AWS services via `moto`
+├── Dockerfile               # Container definition for the Lambda functions
+├── Makefile                 # CLI commands for deployment and teardown
+├── pyproject.toml           # Python dependencies and metadata
+├── template.yaml            # AWS SAM template for the Base Stack
+└── voice-template.yaml      # AWS SAM template for the Voice Stack
 ```
 
 ![Alt text](https://i.ibb.co/YFdM8yg0/3.png)
